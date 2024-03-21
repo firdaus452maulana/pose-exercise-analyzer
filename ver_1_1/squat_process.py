@@ -57,6 +57,7 @@ class ProcessFrame:
         # For tracking counters and sharing states in and out of callbacks.
         self.state_tracker = {
             'state_seq': [],
+            'list_feedback': [],
 
             'TIME': 0.0,
             # 'start_inactive_time': time.perf_counter(),
@@ -90,6 +91,7 @@ class ProcessFrame:
         }
 
         self.DATA_FOR_CSV = [['time', 'repetition', 'hip', 'ankle', 'knee', 'phase']]
+        self.DATA_FEEDBACK = {}
 
     def _get_state(self, knee_angle):
 
