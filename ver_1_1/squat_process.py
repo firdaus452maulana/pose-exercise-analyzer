@@ -77,7 +77,8 @@ class ProcessFrame:
 
             'SQUAT_COUNT': 0,
             'IMPROPER_SQUAT': 0,
-            'FAILED_SQUAT': 0
+            'FAILED_SQUAT': 0,
+            'STATE_REP': []
 
         }
 
@@ -287,12 +288,15 @@ class ProcessFrame:
 
                     if len(self.state_tracker['state_seq']) == 3 and not self.state_tracker['INCORRECT_POSTURE']:
                         self.state_tracker['SQUAT_COUNT'] += 1
+                        self.state_tracker['STATE_REP'].append('CORRECT')
 
                     elif 's2' in self.state_tracker['state_seq'] and len(self.state_tracker['state_seq']) == 1:
                         self.state_tracker['FAILED_SQUAT'] += 1
+                        self.state_tracker['STATE_REP'].append('FAILED')
 
                     elif self.state_tracker['INCORRECT_POSTURE']:
                         self.state_tracker['IMPROPER_SQUAT'] += 1
+                        self.state_tracker['STATE_REP'].append('IMPROPER')
 
                     self.state_tracker['state_seq'] = []
                     self.state_tracker['INCORRECT_POSTURE'] = False
@@ -364,15 +368,6 @@ class ProcessFrame:
                         )
                         self.state_tracker['INCORRECT_POSTURE'] = True
 
-                # -------------------------------------------------------------------------------------------------------
-
-                # ------------------------------------ ADD DATA FOR CSV -------------------------------------------------
-                end_time = time.time()
-                self.state_tracker['TIME'] += end_time - start_time
-                self.DATA_FOR_CSV.append([self.state_tracker['TIME'], self.state_tracker['SQUAT_COUNT'] +
-                                          self.state_tracker['FAILED_SQUAT'] + self.state_tracker['INCORRECT_POSTURE'] +
-                                          1, hip_vertical_angle, ankle_vertical_angle, knee_vertical_angle,
-                                          current_state])
                 # -------------------------------------------------------------------------------------------------------
                 hip_text_coord_x = hip_coord[0] + 10
                 knee_text_coord_x = knee_coord[0] + 15
