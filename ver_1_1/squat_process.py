@@ -39,6 +39,8 @@ class ProcessFrame:
         self.dict_features = {
             'left': {
                 'shoulder': 11,
+                'elbow': 13,
+                'wrist': 15,
                 'hip': 23,
                 'knee': 25,
                 'ankle': 27,
@@ -46,6 +48,8 @@ class ProcessFrame:
             },
             'right': {
                 'shoulder': 12,
+                'elbow': 14,
+                'wrist': 16,
                 'hip': 24,
                 'knee': 26,
                 'ankle': 28,
@@ -57,7 +61,7 @@ class ProcessFrame:
         # For tracking counters and sharing states in and out of callbacks.
         self.state_tracker = {
             'state_seq': [],
-            'list_feedback': [],
+            'list_feedback': set(),
 
             'TIME': 0.0,
             # 'start_inactive_time': time.perf_counter(),
@@ -145,6 +149,13 @@ class ProcessFrame:
 
         return frame
 
+    def _create_data_feedback(self, rep_state, list_feedback):
+        print(list_feedback, end=" function\n")
+        self.state_tracker['STATE_REP'].append(rep_state)
+        self.DATA_FEEDBACK[len(self.state_tracker['STATE_REP'])] = set(list_feedback)
+        print(self.DATA_FEEDBACK, end=" Data Feedback\n")
+        self.state_tracker['list_feedback'].clear()
+
     def process(self, frame: np.array, pose):
         # Start Time
         start_time = time.time()
@@ -176,23 +187,23 @@ class ProcessFrame:
                 if self.flip_frame:
                     frame = cv2.flip(frame, 1)
 
-                draw_text(
-                    frame,
-                    'CAMERA NOT ALIGNED PROPERLY!!!',
-                    pos=(30, 30),
-                    text_color=(30, 30, 230),
-                    font_scale=0.65,
-                    text_color_bg=(255, 153, 0),
-                )
-
-                draw_text(
-                    frame,
-                    'OFFSET ANGLE: ' + str(offset_angle),
-                    pos=(30, 90),
-                    text_color=(30, 30, 230),
-                    font_scale=0.65,
-                    text_color_bg=(255, 153, 0),
-                )
+                # draw_text(
+                #     frame,
+                #     'CAMERA NOT ALIGNED PROPERLY!!!',
+                #     pos=(30, 30),
+                #     text_color=(30, 30, 230),
+                #     font_scale=0.65,
+                #     text_color_bg=(255, 153, 0),
+                # )
+                #
+                # draw_text(
+                #     frame,
+                #     'OFFSET ANGLE: ' + str(offset_angle),
+                #     pos=(30, 90),
+                #     text_color=(30, 30, 230),
+                #     font_scale=0.65,
+                #     text_color_bg=(255, 153, 0),
+                # )
 
                 # Reset inactive times for side view.
                 self.state_tracker['prev_state'] = None
@@ -289,16 +300,22 @@ class ProcessFrame:
                 if current_state == 's1':
 
                     if len(self.state_tracker['state_seq']) == 3 and not self.state_tracker['INCORRECT_POSTURE']:
-                        self.state_tracker['SQUAT_COUNT'] += 1
-                        self.state_tracker['STATE_REP'].append('CORRECT')
+                        # self.state_tracker['SQUAT_COUNT'] += 1
+                        # self.state_tracker['STATE_REP'].append('CORRECT')
+                        print(self.state_tracker['list_feedback'])
+                        self._create_data_feedback('CORRECT', self.state_tracker['list_feedback'])
 
                     elif 's2' in self.state_tracker['state_seq'] and len(self.state_tracker['state_seq']) == 1:
-                        self.state_tracker['FAILED_SQUAT'] += 1
-                        self.state_tracker['STATE_REP'].append('FAILED')
+                        # self.state_tracker['FAILED_SQUAT'] += 1
+                        # self.state_tracker['STATE_REP'].append('FAILED')
+                        print(self.state_tracker['list_feedback'])
+                        self._create_data_feedback('FAILED', self.state_tracker['list_feedback'])
 
                     elif self.state_tracker['INCORRECT_POSTURE']:
-                        self.state_tracker['IMPROPER_SQUAT'] += 1
-                        self.state_tracker['STATE_REP'].append('IMPROPER')
+                        # self.state_tracker['IMPROPER_SQUAT'] += 1
+                        # self.state_tracker['STATE_REP'].append('IMPROPER')
+                        print(self.state_tracker['list_feedback'])
+                        self._create_data_feedback('IMPROPER', self.state_tracker['list_feedback'])
 
                     self.state_tracker['state_seq'] = []
                     self.state_tracker['INCORRECT_POSTURE'] = False
@@ -311,64 +328,30 @@ class ProcessFrame:
                 else:
                     # See how pose from hip
                     if hip_vertical_angle > self.thresholds['HIP_THRESH'][1]:
-                        # self.state_tracker['DISPLAY_TEXT'][0] = True
-                        draw_text(
-                            frame,
-                            "HIP NOT CORRECT",
-                            pos=(int(frame_width * 0.68), 230),
-                            text_color=(255, 0, 255),
-                            font_scale=0.7,
-                            text_color_bg=(221, 0, 0),
-                        )
+                        self.state_tracker['list_feedback'].add(0)
+                        # print(self.state_tracker['list_feedback'])
 
 
                     elif hip_vertical_angle < self.thresholds['HIP_THRESH'][0] and \
                             self.state_tracker['state_seq'].count('s2') == 1:
-                        # self.state_tracker['DISPLAY_TEXT'][1] = True
-                        draw_text(
-                            frame,
-                            "HIP NOT CORRECT",
-                            pos=(int(frame_width * 0.68), 230),
-                            text_color=(255, 0, 255),
-                            font_scale=0.7,
-                            text_color_bg=(221, 0, 0),
-                        )
+                        self.state_tracker['list_feedback'].add(1)
+                        # print(self.state_tracker['list_feedback'])
 
                     # See how far the knee move
-                    if self.thresholds['KNEE_THRESH'][0] < knee_vertical_angle < self.thresholds['KNEE_THRESH'][1] and \
-                            self.state_tracker['state_seq'].count('s2') == 1:
-                        # self.state_tracker['LOWER_HIPS'] = True
-                        draw_text(
-                            frame,
-                            "LOWER YOUR HIPS",
-                            pos=(int(frame_width * 0.68), 180),
-                            text_color=(255, 0, 30),
-                            font_scale=0.7,
-                            text_color_bg=(221, 0, 0),
-                        )
+                    # if self.thresholds['KNEE_THRESH'][0] < knee_vertical_angle < self.thresholds['KNEE_THRESH'][1] and \
+                    #         self.state_tracker['state_seq'].count('s2') == 1:
+                    # self.state_tracker['LOWER_HIPS'] = True
 
                     # See how the pose when in state s3
                     elif knee_vertical_angle > self.thresholds['KNEE_THRESH'][2]:
-                        draw_text(
-                            frame,
-                            "KNEE NOT CORRECT",
-                            pos=(int(frame_width * 0.68), 230),
-                            text_color=(255, 0, 255),
-                            font_scale=0.7,
-                            text_color_bg=(221, 0, 0),
-                        )
+                        self.state_tracker['list_feedback'].add(3)
                         self.state_tracker['INCORRECT_POSTURE'] = True
+                        # print(self.state_tracker['list_feedback'])
 
-                    if (ankle_vertical_angle > self.thresholds['ANKLE_THRESH']):
-                        draw_text(
-                            frame,
-                            "ANKLE NOT CORRECT",
-                            pos=(int(frame_width * 0.68), 230),
-                            text_color=(255, 0, 255),
-                            font_scale=0.7,
-                            text_color_bg=(221, 0, 0),
-                        )
+                    if ankle_vertical_angle > self.thresholds['ANKLE_THRESH']:
+                        self.state_tracker['list_feedback'].add(2)
                         self.state_tracker['INCORRECT_POSTURE'] = True
+                        # print(self.state_tracker['list_feedback'])
 
                 # -------------------------------------------------------------------------------------------------------
                 hip_text_coord_x = hip_coord[0] + 10
@@ -384,7 +367,7 @@ class ProcessFrame:
                 if 's3' in self.state_tracker['state_seq'] or current_state == 's1':
                     self.state_tracker['LOWER_HIPS'] = False
 
-                self.state_tracker['COUNT_FRAMES'][self.state_tracker['DISPLAY_TEXT']] += 1
+                # self.state_tracker['COUNT_FRAMES'][self.state_tracker['DISPLAY_TEXT']] += 1
 
                 # frame = self._show_feedback(frame, self.state_tracker['COUNT_FRAMES'], self.FEEDBACK_ID_MAP,
                 #                             self.state_tracker['LOWER_HIPS'])
@@ -396,38 +379,48 @@ class ProcessFrame:
                 cv2.putText(frame, str(int(ankle_vertical_angle)), (ankle_text_coord_x, ankle_coord[1]), self.font, 0.6,
                             self.COLORS['light_green'], 2, lineType=self.linetype)
 
-                draw_text(
-                    frame,
-                    "CORRECT: " + str(self.state_tracker['SQUAT_COUNT']),
-                    pos=(int(frame_width * 0.68), 30),
-                    text_color=(0, 255, 0),
-                    font_scale=0.7,
-                    text_color_bg=(18, 185, 0)
-                )
+                if 0 or 1 in self.state_tracker['list_feedback']:
+                    cv2.putText(frame, str(int(hip_vertical_angle)), (hip_text_coord_x, hip_coord[1]), self.font, 0.6,
+                                self.COLORS['red'], 2, lineType=self.linetype)
+                if 3 in self.state_tracker['list_feedback']:
+                    cv2.putText(frame, str(int(knee_vertical_angle)), (knee_text_coord_x, knee_coord[1] + 10),
+                                self.font, 0.6, self.COLORS['red'], 2, lineType=self.linetype)
+                if 2 in self.state_tracker['list_feedback']:
+                    cv2.putText(frame, str(int(ankle_vertical_angle)), (ankle_text_coord_x, ankle_coord[1]), self.font,
+                                0.6, self.COLORS['red'], 2, lineType=self.linetype)
 
-                draw_text(
-                    frame,
-                    "INCORRECT POSE: " + str(self.state_tracker['IMPROPER_SQUAT']),
-                    pos=(int(frame_width * 0.68), 80),
-                    text_color=(204, 255, 255),
-                    font_scale=0.7,
-                    text_color_bg=(221, 0, 0),
-                )
-
-                draw_text(
-                    frame,
-                    "FAILED: " + str(self.state_tracker['FAILED_SQUAT']),
-                    pos=(int(frame_width * 0.68), 130),
-                    text_color=(30, 0, 230),
-                    font_scale=0.7,
-                    text_color_bg=(221, 0, 0),
-                )
-
-                self.state_tracker['DISPLAY_TEXT'][
-                    self.state_tracker['COUNT_FRAMES'] > self.thresholds['CNT_FRAME_THRESH']] = False
-                self.state_tracker['COUNT_FRAMES'][
-                    self.state_tracker['COUNT_FRAMES'] > self.thresholds['CNT_FRAME_THRESH']] = 0
-                self.state_tracker['prev_state'] = current_state
+                # draw_text(
+                #     frame,
+                #     "CORRECT: " + str(self.state_tracker['SQUAT_COUNT']),
+                #     pos=(int(frame_width * 0.68), 30),
+                #     text_color=(0, 255, 0),
+                #     font_scale=0.7,
+                #     text_color_bg=(18, 185, 0)
+                # )
+                #
+                # draw_text(
+                #     frame,
+                #     "INCORRECT POSE: " + str(self.state_tracker['IMPROPER_SQUAT']),
+                #     pos=(int(frame_width * 0.68), 80),
+                #     text_color=(204, 255, 255),
+                #     font_scale=0.7,
+                #     text_color_bg=(221, 0, 0),
+                # )
+                #
+                # draw_text(
+                #     frame,
+                #     "FAILED: " + str(self.state_tracker['FAILED_SQUAT']),
+                #     pos=(int(frame_width * 0.68), 130),
+                #     text_color=(30, 0, 230),
+                #     font_scale=0.7,
+                #     text_color_bg=(221, 0, 0),
+                # )
+                #
+                # self.state_tracker['DISPLAY_TEXT'][
+                #     self.state_tracker['COUNT_FRAMES'] > self.thresholds['CNT_FRAME_THRESH']] = False
+                # self.state_tracker['COUNT_FRAMES'][
+                #     self.state_tracker['COUNT_FRAMES'] > self.thresholds['CNT_FRAME_THRESH']] = 0
+                # self.state_tracker['prev_state'] = current_state
 
 
 
@@ -436,32 +429,32 @@ class ProcessFrame:
             if self.flip_frame:
                 frame = cv2.flip(frame, 1)
 
-            draw_text(
-                frame,
-                "CORRECT: " + str(self.state_tracker['SQUAT_COUNT']),
-                pos=(int(frame_width * 0.68), 30),
-                text_color=(0, 255, 0),
-                font_scale=0.7,
-                text_color_bg=(18, 185, 0)
-            )
-
-            draw_text(
-                frame,
-                "INCORRECT POSE: " + str(self.state_tracker['IMPROPER_SQUAT']),
-                pos=(int(frame_width * 0.68), 80),
-                text_color=(204, 255, 255),
-                font_scale=0.7,
-                text_color_bg=(221, 0, 0),
-            )
-
-            draw_text(
-                frame,
-                "FAILED: " + str(self.state_tracker['FAILED_SQUAT']),
-                pos=(int(frame_width * 0.68), 130),
-                text_color=(30, 0, 230),
-                font_scale=0.7,
-                text_color_bg=(221, 0, 0),
-            )
+            # draw_text(
+            #     frame,
+            #     "CORRECT: " + str(self.state_tracker['SQUAT_COUNT']),
+            #     pos=(int(frame_width * 0.68), 30),
+            #     text_color=(0, 255, 0),
+            #     font_scale=0.7,
+            #     text_color_bg=(18, 185, 0)
+            # )
+            #
+            # draw_text(
+            #     frame,
+            #     "INCORRECT POSE: " + str(self.state_tracker['IMPROPER_SQUAT']),
+            #     pos=(int(frame_width * 0.68), 80),
+            #     text_color=(204, 255, 255),
+            #     font_scale=0.7,
+            #     text_color_bg=(221, 0, 0),
+            # )
+            #
+            # draw_text(
+            #     frame,
+            #     "FAILED: " + str(self.state_tracker['FAILED_SQUAT']),
+            #     pos=(int(frame_width * 0.68), 130),
+            #     text_color=(30, 0, 230),
+            #     font_scale=0.7,
+            #     text_color_bg=(221, 0, 0),
+            # )
 
             # Reset all other state variables
 

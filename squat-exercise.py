@@ -12,7 +12,7 @@ live_process_frame = ProcessFrame(thresholds=thresholds, flip_frame=True)
 # Initialize face mesh solution
 pose = get_mediapipe_pose()
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 while True:
     success, img = cap.read()
