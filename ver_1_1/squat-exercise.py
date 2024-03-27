@@ -1,15 +1,17 @@
 import cv2
 import csv
+import datetime
 
 from utils import get_mediapipe_pose
 from squat_process import ProcessFrame
 from thresholds import get_thresholds_beginner
-from dictionary_feedback import get_feedback_words
+from dictionary_feedback_2 import get_feedback_words
 
 # thresholds = get_thresholds_beginner()
 thresholds = get_thresholds_beginner()
 
-live_process_frame = ProcessFrame(thresholds=thresholds, flip_frame=True)
+name_folder = datetime.date.today()
+live_process_frame = ProcessFrame(thresholds=thresholds, flip_frame=True, name_folder=name_folder)
 # Initialize face mesh solution
 pose = get_mediapipe_pose()
 

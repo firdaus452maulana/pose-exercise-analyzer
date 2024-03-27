@@ -2,10 +2,10 @@ import time
 import cv2
 import numpy as np
 from utils import find_angle, get_landmark_features, draw_text, draw_dotted_line
-
+import base64
 
 class ProcessFrame:
-    def __init__(self, thresholds, flip_frame=False):
+    def __init__(self, thresholds, flip_frame=False, name_folder=""):
 
         # Set if frame should be flipped or not.
         self.flip_frame = flip_frame
@@ -21,6 +21,9 @@ class ProcessFrame:
 
         # set radius to draw arc
         self.radius = 20
+
+        # Set name folder for saving the image
+        self.name_folder = name_folder
 
         # Colors in BGR format.
         self.COLORS = {
@@ -155,6 +158,11 @@ class ProcessFrame:
         self.DATA_FEEDBACK[len(self.state_tracker['STATE_REP'])] = set(list_feedback)
         print(self.DATA_FEEDBACK, end=" Data Feedback\n")
         self.state_tracker['list_feedback'].clear()
+
+    def _add_feedback_with_image(self, frame, feedback):
+        frame_byte = frame.tobytes()
+        frame_b64 = base64.b64encode(frame_byte)
+        self.state_tracker['list_feedback'][feedback] = frame_b64
 
     def process(self, frame: np.array, pose):
         # Start Time
