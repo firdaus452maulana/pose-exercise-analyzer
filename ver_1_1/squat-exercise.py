@@ -1,24 +1,30 @@
 import cv2
 import csv
 import datetime
+import os
 
 from utils import get_mediapipe_pose
 from squat_process import ProcessFrame
 from thresholds import get_thresholds_beginner
-from dictionary_feedback_2 import get_feedback_words
+from dictionary_feedback import get_feedback_words
 
 # thresholds = get_thresholds_beginner()
 thresholds = get_thresholds_beginner()
 
 name_folder = datetime.date.today()
+if not os.path.exists(str(name_folder)):
+    os.mkdir(str(name_folder))
+
 live_process_frame = ProcessFrame(thresholds=thresholds, flip_frame=True, name_folder=name_folder)
 # Initialize face mesh solution
 pose = get_mediapipe_pose()
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 while True:
     success, img = cap.read()
+    if not success:
+        break
     frame, _ = live_process_frame.process(img, pose)  # Process frame
 
     cv2.imshow("Image", frame)
@@ -49,7 +55,7 @@ for rep in range(len(state_rep)):
                                                    'squat lift your spirit higher!', '', '', ''])
 
 print(live_process_frame.DATA_FOR_CSV)
-f = open('data_feedback_squats.csv', 'w')
+f = open('{}/data_feedback_squats.csv'.format(name_folder), 'w')
 
 writer = csv.writer(f)
 

@@ -1,8 +1,10 @@
 import time
+
 import cv2
 import numpy as np
+
 from utils import find_angle, get_landmark_features, draw_text, draw_dotted_line
-import base64
+
 
 class ProcessFrame:
     def __init__(self, thresholds, flip_frame=False, name_folder=""):
@@ -159,10 +161,16 @@ class ProcessFrame:
         print(self.DATA_FEEDBACK, end=" Data Feedback\n")
         self.state_tracker['list_feedback'].clear()
 
-    def _add_feedback_with_image(self, frame, feedback):
-        frame_byte = frame.tobytes()
-        frame_b64 = base64.b64encode(frame_byte)
-        self.state_tracker['list_feedback'][feedback] = frame_b64
+    def _add_feedback_with_image(self, frame, feedback, angle, coor_x, coor_y):
+        # frame_byte = frame.tobytes()
+        # frame_b64 = base64.b64encode(frame_byte)
+        # self.state_tracker['list_feedback'][feedback] = frame_b64
+        folder_file_name = f'{self.name_folder}/{len(self.state_tracker["STATE_REP"])}_{feedback}.jpg'
+        if feedback not in self.state_tracker['list_feedback']:
+            self.state_tracker['list_feedback'].add(feedback)
+            cv2.putText(frame, str(int(angle)), (coor_x, coor_y), self.font, 0.6,
+                        self.COLORS['red'], 2, lineType=self.linetype)
+            cv2.imwrite(folder_file_name, frame)
 
     def process(self, frame: np.array, pose):
         # Start Time
@@ -303,65 +311,7 @@ class ProcessFrame:
                 self.state_tracker['curr_state'] = current_state
                 self._update_state_sequence(current_state)
 
-                # -------------------------------------- COMPUTE COUNTERS --------------------------------------
-
-                if current_state == 's1':
-
-                    if len(self.state_tracker['state_seq']) == 3 and not self.state_tracker['INCORRECT_POSTURE']:
-                        # self.state_tracker['SQUAT_COUNT'] += 1
-                        # self.state_tracker['STATE_REP'].append('CORRECT')
-                        print(self.state_tracker['list_feedback'])
-                        self._create_data_feedback('CORRECT', self.state_tracker['list_feedback'])
-
-                    elif 's2' in self.state_tracker['state_seq'] and len(self.state_tracker['state_seq']) == 1:
-                        # self.state_tracker['FAILED_SQUAT'] += 1
-                        # self.state_tracker['STATE_REP'].append('FAILED')
-                        print(self.state_tracker['list_feedback'])
-                        self._create_data_feedback('FAILED', self.state_tracker['list_feedback'])
-
-                    elif self.state_tracker['INCORRECT_POSTURE']:
-                        # self.state_tracker['IMPROPER_SQUAT'] += 1
-                        # self.state_tracker['STATE_REP'].append('IMPROPER')
-                        print(self.state_tracker['list_feedback'])
-                        self._create_data_feedback('IMPROPER', self.state_tracker['list_feedback'])
-
-                    self.state_tracker['state_seq'] = []
-                    self.state_tracker['INCORRECT_POSTURE'] = False
-
-
-                # ----------------------------------------------------------------------------------------------------
-
-                # -------------------------------------- PERFORM FEEDBACK ACTIONS --------------------------------------
-
-                else:
-                    # See how pose from hip
-                    if hip_vertical_angle > self.thresholds['HIP_THRESH'][1]:
-                        self.state_tracker['list_feedback'].add(0)
-                        # print(self.state_tracker['list_feedback'])
-
-
-                    elif hip_vertical_angle < self.thresholds['HIP_THRESH'][0] and \
-                            self.state_tracker['state_seq'].count('s2') == 1:
-                        self.state_tracker['list_feedback'].add(1)
-                        # print(self.state_tracker['list_feedback'])
-
-                    # See how far the knee move
-                    # if self.thresholds['KNEE_THRESH'][0] < knee_vertical_angle < self.thresholds['KNEE_THRESH'][1] and \
-                    #         self.state_tracker['state_seq'].count('s2') == 1:
-                    # self.state_tracker['LOWER_HIPS'] = True
-
-                    # See how the pose when in state s3
-                    elif knee_vertical_angle > self.thresholds['KNEE_THRESH'][2]:
-                        self.state_tracker['list_feedback'].add(3)
-                        self.state_tracker['INCORRECT_POSTURE'] = True
-                        # print(self.state_tracker['list_feedback'])
-
-                    if ankle_vertical_angle > self.thresholds['ANKLE_THRESH']:
-                        self.state_tracker['list_feedback'].add(2)
-                        self.state_tracker['INCORRECT_POSTURE'] = True
-                        # print(self.state_tracker['list_feedback'])
-
-                # -------------------------------------------------------------------------------------------------------
+                # ------------------------------------- PLACING COORDINATE --------------------------------------------
                 hip_text_coord_x = hip_coord[0] + 10
                 knee_text_coord_x = knee_coord[0] + 15
                 ankle_text_coord_x = ankle_coord[0] + 10
@@ -371,6 +321,71 @@ class ProcessFrame:
                     hip_text_coord_x = frame_width - hip_coord[0] + 10
                     knee_text_coord_x = frame_width - knee_coord[0] + 15
                     ankle_text_coord_x = frame_width - ankle_coord[0] + 10
+
+                # -------------------------------------- COMPUTE COUNTERS --------------------------------------
+
+                if current_state == 's1':
+
+                    if len(self.state_tracker['state_seq']) == 3 and not self.state_tracker['INCORRECT_POSTURE']:
+                        # self.state_tracker['SQUAT_COUNT'] += 1
+                        # self.state_tracker['STATE_REP'].append('CORRECT')
+                        # print(self.state_tracker['list_feedback'])
+                        self._create_data_feedback('CORRECT', self.state_tracker['list_feedback'])
+
+                    elif 's2' in self.state_tracker['state_seq'] and len(self.state_tracker['state_seq']) == 1:
+                        # self.state_tracker['FAILED_SQUAT'] += 1
+                        # self.state_tracker['STATE_REP'].append('FAILED')
+                        # print(self.state_tracker['list_feedback'])
+                        self._create_data_feedback('FAILED', self.state_tracker['list_feedback'])
+
+                    elif self.state_tracker['INCORRECT_POSTURE']:
+                        # self.state_tracker['IMPROPER_SQUAT'] += 1
+                        # self.state_tracker['STATE_REP'].append('IMPROPER')
+                        # print(self.state_tracker['list_feedback'])
+                        self._create_data_feedback('IMPROPER', self.state_tracker['list_feedback'])
+
+                    self.state_tracker['state_seq'] = []
+                    self.state_tracker['INCORRECT_POSTURE'] = False
+
+
+                # ------------------------------------------------------------------------------------------------------
+                # -------------------------------------- PERFORM FEEDBACK ACTIONS --------------------------------------
+
+                else:
+                    # See how pose from hip
+                    if hip_vertical_angle > self.thresholds['HIP_THRESH'][1]:
+                        # self.state_tracker['list_feedback'].add(0)
+                        self._add_feedback_with_image(frame, 0, hip_vertical_angle, hip_text_coord_x, hip_coord[1])
+                        self.state_tracker['INCORRECT_POSTURE'] = True
+                        # print(self.state_tracker['list_feedback'])
+
+
+                    elif hip_vertical_angle < self.thresholds['HIP_THRESH'][0] and \
+                            self.state_tracker['state_seq'].count('s2') == 1:
+                        # self.state_tracker['list_feedback'].add(1)
+                        self._add_feedback_with_image(frame, 1, hip_vertical_angle, hip_text_coord_x, hip_coord[1])
+                        self.state_tracker['INCORRECT_POSTURE'] = True
+                        # print(self.state_tracker['list_feedback'])
+
+                    # See how far the knee move
+                    # if self.thresholds['KNEE_THRESH'][0] < knee_vertical_angle < self.thresholds['KNEE_THRESH'][1] and \
+                    #         self.state_tracker['state_seq'].count('s2') == 1:
+                    # self.state_tracker['LOWER_HIPS'] = True
+
+                    # See how the pose when in state s3
+                    elif knee_vertical_angle > self.thresholds['KNEE_THRESH'][2]:
+                        # self.state_tracker['list_feedback'].add(3)
+                        self._add_feedback_with_image(frame, 3, knee_vertical_angle, knee_text_coord_x, knee_coord[1])
+                        self.state_tracker['INCORRECT_POSTURE'] = True
+                        # print(self.state_tracker['list_feedback'])
+
+                    if ankle_vertical_angle > self.thresholds['ANKLE_THRESH']:
+                        # self.state_tracker['list_feedback'].add(2)
+                        self._add_feedback_with_image(frame, 2, ankle_vertical_angle, ankle_text_coord_x, ankle_coord[1])
+                        self.state_tracker['INCORRECT_POSTURE'] = True
+                        # print(self.state_tracker['list_feedback'])
+
+                # -------------------------------------------------------------------------------------------------------
 
                 if 's3' in self.state_tracker['state_seq'] or current_state == 's1':
                     self.state_tracker['LOWER_HIPS'] = False
