@@ -1,7 +1,13 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import csv
 
+
+def _image_to_base64(img):
+    frame_byte = img.tobytes()
+    frame_b64 = img.b64encode(frame_byte)
+    return frame_b64
 
 def draw_rounded_rect(img, rect_start, rect_end, corner_width, box_color):
     x1, y1 = rect_start
@@ -122,3 +128,37 @@ def get_mediapipe_pose():
         min_tracking_confidence=0.5
     )
     return pose
+
+
+def create_csv_files(data, feedback_dict, name_folder):
+    state_rep = data.state_tracker['STATE_REP']
+    data_feedback = data.DATA_FEEDBACK
+    write_csv = [['repetition', 'state', 'feedback_1', 'feedback_1_img', 'feedback_2', 'feedback_2_img', 'feedback_3', 'feedback_3_img', 'feedback_4', 'feedback_4_img']]
+    for rep in range(len(state_rep)):
+        # print(data_feedback)
+        if state_rep[rep] == 'FAILED':
+            write_csv.append([rep + 1, state_rep[rep], 'You are performing the squat imperfectly, you should lower the '
+                                                       'squat until your thighs are in line with your knees.', '', '',
+                              ''])
+        elif state_rep[rep] == 'IMPROPER':
+            feedback = data_feedback[rep + 1]
+            feedback_array = [-1, -1, -1, -1]
+            for x in range(len(feedback)):
+                feedback_array[x] = list(feedback)[x]
+            write_csv.append(
+                [rep + 1, state_rep[rep], feedback_dict[feedback_array[0]], feedback_dict[feedback_array[1]],
+                 feedback_dict[feedback_array[2]], feedback_dict[feedback_array[3]]])
+
+        else:
+            write_csv.append(
+                [rep + 1, state_rep[rep], 'You are strong, you are capable, and every squat is a testament '
+                                          'to your dedication and hard work. Keep moving, and let every '
+                                          'squat lift your spirit higher!', '', '', ''])
+
+    f = open('{}/data_feedback_squats.csv'.format(name_folder), 'w')
+
+    writer = csv.writer(f)
+
+    writer.writerows(write_csv)
+
+    f.close()
