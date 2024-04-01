@@ -11,7 +11,7 @@ from dictionary_feedback import get_feedback_words
 # thresholds = get_thresholds_beginner()
 thresholds = get_thresholds_beginner()
 
-name_folder = datetime.date.today()
+name_folder = os.path.join(str(datetime.date.today()), "set4")
 if not os.path.exists(str(name_folder)):
     os.mkdir(str(name_folder))
 
@@ -19,7 +19,7 @@ live_process_frame = ProcessFrame(thresholds=thresholds, flip_frame=True, name_f
 # Initialize face mesh solution
 pose = get_mediapipe_pose()
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("day1/WIN_20240401_10_28_42_Pro.mp4")
 
 while True:
     success, img = cap.read()
