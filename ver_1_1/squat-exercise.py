@@ -26,8 +26,6 @@ while True:
     success, img = cap.read()
     if not success:
         break
-    if img.shape[1] > 1000:
-        img = cv2.resize(img, (int(img.shape[1] / 2), int(img.shape[0] / 2)), interpolation=cv2.INTER_AREA)
     frame, _ = live_process_frame.process(img, pose)  # Process frame
 
     cv2.imshow("Image", frame)

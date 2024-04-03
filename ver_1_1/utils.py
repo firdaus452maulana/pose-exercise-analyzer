@@ -6,6 +6,8 @@ import csv
 
 
 def _image_to_base64(img):
+    if img.shape[1] > 1000:
+        img = cv2.resize(img, (int(img.shape[1] / 2), int(img.shape[0] / 2)), interpolation=cv2.INTER_AREA)
     _, im_arr = cv2.imencode('.jpg', img)
     frame_byte = im_arr.tobytes()
     frame_b64 = base64.b64encode(frame_byte)
