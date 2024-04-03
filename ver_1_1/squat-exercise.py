@@ -2,7 +2,7 @@ import cv2
 import datetime
 import os
 
-from utils import get_mediapipe_pose, create_csv_files
+from utils import get_mediapipe_pose, create_csv_files, create_dict_object
 from squat_process import ProcessFrame
 from thresholds import get_thresholds_beginner
 from dictionary_feedback import get_feedback_words
@@ -20,14 +20,14 @@ live_process_frame = ProcessFrame(thresholds=thresholds, flip_frame=True, name_f
 # Initialize face mesh solution
 pose = get_mediapipe_pose()
 
-cap = cv2.VideoCapture("day1/WIN_20240401_15_54_08_Pro.mp4")
+cap = cv2.VideoCapture("WIN_20240330_23_27_27_Pro.mp4")
 
 while True:
     success, img = cap.read()
     if not success:
         break
     if img.shape[1] > 1000:
-        img = cv2.resize(img, (int(img.shape[1]/2), int(img.shape[0]/2)), interpolation = cv2.INTER_AREA)
+        img = cv2.resize(img, (int(img.shape[1] / 2), int(img.shape[0] / 2)), interpolation=cv2.INTER_AREA)
     frame, _ = live_process_frame.process(img, pose)  # Process frame
 
     cv2.imshow("Image", frame)
@@ -35,5 +35,7 @@ while True:
         break
 
 feedback_words = get_feedback_words()
+create_dict_object(live_process_frame, name_folder)
+
 
 create_csv_files(live_process_frame, feedback_words, name_folder)

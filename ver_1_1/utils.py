@@ -1,3 +1,4 @@
+import base64
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -5,9 +6,11 @@ import csv
 
 
 def _image_to_base64(img):
-    frame_byte = img.tobytes()
-    frame_b64 = img.b64encode(frame_byte)
+    _, im_arr = cv2.imencode('.jpg', img)
+    frame_byte = im_arr.tobytes()
+    frame_b64 = base64.b64encode(frame_byte)
     return frame_b64
+
 
 def draw_rounded_rect(img, rect_start, rect_end, corner_width, box_color):
     x1, y1 = rect_start
@@ -133,7 +136,8 @@ def get_mediapipe_pose():
 def create_csv_files(data, feedback_dict, name_folder):
     state_rep = data.state_tracker['STATE_REP']
     data_feedback = data.DATA_FEEDBACK
-    write_csv = [['repetition', 'state', 'feedback_1', 'feedback_1_img', 'feedback_2', 'feedback_2_img', 'feedback_3', 'feedback_3_img', 'feedback_4', 'feedback_4_img']]
+    write_csv = [['repetition', 'state', 'feedback_1', 'feedback_1_img', 'feedback_2', 'feedback_2_img', 'feedback_3',
+                  'feedback_3_img', 'feedback_4', 'feedback_4_img']]
     for rep in range(len(state_rep)):
         # print(data_feedback)
         if state_rep[rep] == 'FAILED':
@@ -142,6 +146,7 @@ def create_csv_files(data, feedback_dict, name_folder):
                               ''])
         elif state_rep[rep] == 'IMPROPER':
             feedback = data_feedback[rep + 1]
+            print(feedback)
             feedback_array = [-1, -1, -1, -1]
             for x in range(len(feedback)):
                 feedback_array[x] = list(feedback)[x]
@@ -162,3 +167,21 @@ def create_csv_files(data, feedback_dict, name_folder):
     writer.writerows(write_csv)
 
     f.close()
+
+
+def create_dict_object(data, name_folder):
+    state_rep = data.state_tracker['STATE_REP']
+    data_feedback = data.DATA_FEEDBACK
+    data_obj = []
+    for rep in range(len(state_rep)):
+        repetition_obj = {'repetition': rep, 'state': state_rep[rep]}
+        feedback_arr = []
+        for feedback in data_feedback[rep + 1]:
+            image = cv2.imread(f'{name_folder}/{rep}_{feedback}.jpg')
+            img_b64 = _image_to_base64(image)
+            feedback_arr.append({'feedback': feedback, 'img_64': img_b64})
+        repetition_obj['feedbacks'] = feedback_arr
+        data_obj.append(repetition_obj)
+
+    with open(f'{name_folder}/data_feedback_squats.txt', "w") as text_file:
+        text_file.write(str(data_obj))
