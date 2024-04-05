@@ -3,6 +3,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import csv
+import json
 
 
 def _image_to_base64(img):
@@ -10,7 +11,7 @@ def _image_to_base64(img):
         img = cv2.resize(img, (int(img.shape[1] / 2), int(img.shape[0] / 2)), interpolation=cv2.INTER_AREA)
     _, im_arr = cv2.imencode('.jpg', img)
     frame_byte = im_arr.tobytes()
-    frame_b64 = base64.b64encode(frame_byte)
+    frame_b64 = base64.b64encode(frame_byte).decode("utf-8")
     return frame_b64
 
 
@@ -176,14 +177,14 @@ def create_dict_object(data, name_folder):
     data_feedback = data.DATA_FEEDBACK
     data_obj = []
     for rep in range(len(state_rep)):
-        repetition_obj = {'repetition': rep, 'state': state_rep[rep]}
+        repetition_obj = {"repetition": rep, "state": state_rep[rep]}
         feedback_arr = []
         for feedback in data_feedback[rep + 1]:
             image = cv2.imread(f'{name_folder}/{rep}_{feedback}.jpg')
             img_b64 = _image_to_base64(image)
-            feedback_arr.append({'feedback': feedback, 'img_64': img_b64})
-        repetition_obj['feedbacks'] = feedback_arr
+            feedback_arr.append({"feedback": feedback, "img_64": img_b64})
+        repetition_obj["feedbacks"] = feedback_arr
         data_obj.append(repetition_obj)
 
     with open(f'{name_folder}/data_feedback_squats.txt', "w") as text_file:
-        text_file.write(str(data_obj))
+        text_file.write(str(data_obj).replace("\'", "\""))
