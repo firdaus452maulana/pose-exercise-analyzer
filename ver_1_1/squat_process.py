@@ -33,7 +33,7 @@ class ProcessFrame:
             'red': (50, 50, 255),
             'green': (0, 255, 127),
             'light_green': (100, 233, 127),
-            'yellow': (255, 255, 0),
+            'yellow': (0, 255, 255),
             'magenta': (255, 0, 255),
             'white': (255, 255, 255),
             'cyan': (0, 255, 255),
@@ -168,7 +168,10 @@ class ProcessFrame:
         folder_file_name = f'{self.name_folder}/{len(self.state_tracker["STATE_REP"])}_{feedback}.jpg'
         if feedback not in self.state_tracker['list_feedback']:
             self.state_tracker['list_feedback'].add(feedback)
-            cv2.putText(frame, str(int(angle)), (coor_x, coor_y), self.font, 0.6,
+            cv2.rectangle(frame, (coor_x - 110, coor_y - 100), (coor_x + 90, coor_y + 100), self.COLORS['yellow'],
+                          3)
+            # cv2.circle(frame, (coor_x - 15, coor_y - 15), 30, self.COLORS['red'], 2, lineType=self.linetype)
+            cv2.putText(frame, str(int(angle)), (coor_x, coor_y), self.font, 0.8,
                         self.COLORS['red'], 2, lineType=self.linetype)
             cv2.imwrite(folder_file_name, frame)
 
@@ -299,13 +302,13 @@ class ProcessFrame:
                 cv2.line(frame, ankle_coord, foot_coord, self.COLORS['white'], 4, lineType=self.linetype)
 
                 # Plot landmark points
-                cv2.circle(frame, shldr_coord, 5, self.COLORS['red'], -1, lineType=self.linetype)
-                cv2.circle(frame, elbow_coord, 5, self.COLORS['red'], -1, lineType=self.linetype)
-                cv2.circle(frame, wrist_coord, 5, self.COLORS['red'], -1, lineType=self.linetype)
-                cv2.circle(frame, hip_coord, 5, self.COLORS['red'], -1, lineType=self.linetype)
-                cv2.circle(frame, knee_coord, 5, self.COLORS['red'], -1, lineType=self.linetype)
-                cv2.circle(frame, ankle_coord, 5, self.COLORS['red'], -1, lineType=self.linetype)
-                cv2.circle(frame, foot_coord, 5, self.COLORS['red'], -1, lineType=self.linetype)
+                cv2.circle(frame, shldr_coord, 5, self.COLORS['magenta'], -1, lineType=self.linetype)
+                cv2.circle(frame, elbow_coord, 5, self.COLORS['magenta'], -1, lineType=self.linetype)
+                cv2.circle(frame, wrist_coord, 5, self.COLORS['magenta'], -1, lineType=self.linetype)
+                cv2.circle(frame, hip_coord, 5, self.COLORS['magenta'], -1, lineType=self.linetype)
+                cv2.circle(frame, knee_coord, 5, self.COLORS['magenta'], -1, lineType=self.linetype)
+                cv2.circle(frame, ankle_coord, 5, self.COLORS['magenta'], -1, lineType=self.linetype)
+                cv2.circle(frame, foot_coord, 5, self.COLORS['magenta'], -1, lineType=self.linetype)
 
                 current_state = self._get_state(int(knee_vertical_angle))
                 self.state_tracker['curr_state'] = current_state
@@ -381,7 +384,8 @@ class ProcessFrame:
 
                     if ankle_vertical_angle > self.thresholds['ANKLE_THRESH']:
                         # self.state_tracker['list_feedback'].add(2)
-                        self._add_feedback_with_image(frame, 2, ankle_vertical_angle, ankle_text_coord_x, ankle_coord[1])
+                        self._add_feedback_with_image(frame, 2, ankle_vertical_angle, ankle_text_coord_x,
+                                                      ankle_coord[1])
                         self.state_tracker['INCORRECT_POSTURE'] = True
                         # print(self.state_tracker['list_feedback'])
 
