@@ -8,7 +8,11 @@ import json
 
 def _image_to_base64(img):
     if img.shape[1] > 1000:
-        img = cv2.resize(img, (int(img.shape[1] / 2), int(img.shape[0] / 2)), interpolation=cv2.INTER_AREA)
+        img = cv2.resize(img, (int(img.shape[1] / 3), int(img.shape[0] / 3)), interpolation=cv2.INTER_AREA)
+    scale = 350
+    x = img.shape[1] / 2 - scale / 2
+    y = img.shape[0] / 2 - scale / 2
+    img = img[int(y):int(y + scale), int(x):int(x + scale)]
     _, im_arr = cv2.imencode('.jpg', img)
     frame_byte = im_arr.tobytes()
     frame_b64 = base64.b64encode(frame_byte).decode("utf-8")
